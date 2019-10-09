@@ -18,6 +18,7 @@ int alarmIsOn = false;
 // CODES
 int userCode[3] = {-1, -1, -1};
 int currentCodeStep = 0;
+int currentChangeCodeStep = 0;
 bool enteringCode = false;
 bool changingCode = false;
 
@@ -108,18 +109,19 @@ int changeCode() {
 
   if (digitalRead(BUTTON2) == LOW) {
     return;
-  } 
-    
+  }
+
   for (int i = 0; i < 3; i++) {
     for (int i = 0; i < sizeof(code); i++) {
-      if (currentCodeStep == i) {
+      if (currentChangeCodeStep == i) {
         userCode[i] = newCodeNumber;
         Serial.println(userCode[i]);
-        currentCodeStep++;
+        code[currentChangeCodeStep] = newCodeNumber;
+        currentChangeCodeStep++;
       }
 
       for (int i = 0; i < 3; i++) {
-        if (currentCodeStep == 3) {
+        if (currentChangeCodeStep == 3) {
           codeChanged = true;
           Serial.println("code is changed");
         }
@@ -190,8 +192,8 @@ void loop() {
     turnOnLEDAndTurnOthersOff(LED_YELLOW);
     OLED.print("OK to arm");
 
-    while (digitalRead(BUTTON2) == HIGH && codeChanged == false) {
-      // changeCode();
+    while ((digitalRead(BUTTON2) == HIGH && codeChanged == false) || changingCode) {
+      changeCode();
     }
 
     // TODO: mogelijkheid om 3 cijferige code te veranderen
