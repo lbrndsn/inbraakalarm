@@ -100,34 +100,59 @@ void checkCode() {
 }
 
 bool codeChanged = false;
+bool canClickAgain = true;
+bool canStartInputNewCode = false;
 
 // PRESS CANCEL BUTTON TO CHANGE SECURITY CODE
 int changeCode() {
   changingCode = true;
   int newCodeNumber = getNumberFromPotentiometer();
-  OLED.print("Changing code");
-
+  OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
   if (digitalRead(BUTTON2) == LOW) {
+    canStartInputNewCode = true;
+    canClickAgain = true;
     return;
   }
 
-  for (int i = 0; i < 3; i++) {
-    for (int i = 0; i < sizeof(code); i++) {
-      if (currentChangeCodeStep == i) {
-        userCode[i] = newCodeNumber;
-        Serial.println(userCode[i]);
-        code[currentChangeCodeStep] = newCodeNumber;
-        currentChangeCodeStep++;
-      }
+  if (!canStartInputNewCode) {
+    return;
+  }
+  
+  canClickAgain = false;
 
-      for (int i = 0; i < 3; i++) {
-        if (currentChangeCodeStep == 3) {
-          codeChanged = true;
-          Serial.println("code is changed");
-        }
-      }
+  if (!canClickAgain && millis() - time > debounce) {
+    Serial.println(currentChangeCodeStep);
+    
+    code[currentChangeCodeStep] = newCodeNumber;
+    Serial.println("New code for step " + String(currentChangeCodeStep) +": " + String(newCodeNumber));
+    currentChangeCodeStep++;
+    time = millis();
+
+    if (currentChangeCodeStep == 3) {
+      codeChanged = true;
+      changingCode = false;
+      Serial.println("code changed");
     }
   }
+  
+//
+//  for (int i = 0; i < 3; i++) {
+//    for (int i = 0; i < sizeof(code); i++) {
+//      if (currentChangeCodeStep == i) {
+//        userCode[i] = newCodeNumber;
+//        Serial.println(userCode[i]);
+//        code[currentChangeCodeStep] = newCodeNumber;
+//        currentChangeCodeStep++;
+//      }
+//
+//      for (int i = 0; i < 3; i++) {
+//        if (currentChangeCodeStep == 3) {
+//          codeChanged = true;
+//          Serial.println("code is changed");
+//        }
+//      }
+//    }
+//  }
 }
 
 // TODO: cijfer dat je aan het invoeren bent laten knipperen, herbruikbare functies*
@@ -190,9 +215,11 @@ void loop() {
   // DOOR CLOSED, ALARM OFF
   if (varDoorIsOpen == false && alarmIsOn == false) {
     turnOnLEDAndTurnOthersOff(LED_YELLOW);
-    OLED.print("OK to arm");
+    if (!changingCode) {
+      OLED.print("OK to arm");
+    }
 
-    while ((digitalRead(BUTTON2) == HIGH && codeChanged == false) || changingCode) {
+    if ((digitalRead(BUTTON2) == HIGH && codeChanged == false) || (changingCode && codeChanged == false)) {
       changeCode();
     }
 
