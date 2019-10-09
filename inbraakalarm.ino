@@ -1,7 +1,7 @@
 #include "s4d_breadboard.h"
 
 int magnetStartingValue;
-int code[3] = {1, 2, 3};
+int code[3] = {1, 1, 1};
 
 void setup() {
   initializeBreadboard();
@@ -71,36 +71,61 @@ int turnOnLEDAndTurnOthersOff(int LEDColor) {
   turnOnLED(LEDColor);
 }
 
+bool canClickAgain = true;
+
 // COMPARE CODE USER FILLS IN TO SET SECURITY CODE
+// TODO: gaat fout omdat knop meerdere keren triggered,
+// dus ff kijken hoe je de knop moet debouncen en canClickAgain moet doen, (zie onder bij changecode) 
 void checkCode() {
   enteringCode = true;
   int currentNumber = getNumberFromPotentiometer();
 
   if (digitalRead(BUTTON1) == LOW) {
+    canClickAgain = true;
     return;
   }
-  
-  Serial.println("Entering number: " + String(currentNumber));
 
-  
-  for (int i = 0; i < sizeof(code); i++) {
-    if (currentCodeStep == i && currentNumber == code[i]) {
-      Serial.println("Number is correct");
-      userCode[i] = currentNumber;
-      currentCodeStep++;
-      
-      for (int j = 0; j < 3; j++) {
-        if (userCode[j] == code[j] && currentCodeStep == 3) {
-          Serial.println("code correct");
-          alarmIsOn = false;
+
+  if (canClickAgain && millis() - time > debounce) {
+    canClickAgain = false;
+    Serial.println("Entering number: " + String(currentNumber));
+
+    for (int i = 0; i < sizeof(code); i++) {
+      if (currentCodeStep == i && currentNumber == code[i]) {
+        Serial.println("Number is correct");
+        userCode[i] = currentNumber;
+        currentCodeStep++;
+
+        for (int j = 0; j < 3; j++) {
+          if (userCode[j] == code[j] && currentCodeStep == 3) {
+            Serial.println("code correct");
+            alarmIsOn = false;
+          }
         }
+        
+        break; 
       }
     }
+    
+//    
+//    for (int i = 0; i < sizeof(code); i++) {
+//      if (currentCodeStep == i && currentNumber == code[i]) {
+//        Serial.println("Number is correct");
+//        userCode[i] = currentNumber;
+//        currentCodeStep++;
+//        
+//        for (int j = 0; j < 3; j++) {
+//          if (userCode[j] == code[j] && currentCodeStep == 3) {
+//            Serial.println("code correct");
+//            alarmIsOn = false;
+//          }
+//        }
+//      }
+//    }
   }
 }
 
 bool codeChanged = false;
-bool canClickAgain = true;
 bool canStartInputNewCode = false;
 
 // PRESS CANCEL BUTTON TO CHANGE SECURITY CODE
@@ -108,6 +133,7 @@ int changeCode() {
   changingCode = true;
   int newCodeNumber = getNumberFromPotentiometer();
   OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
+  
   if (digitalRead(BUTTON2) == LOW) {
     canStartInputNewCode = true;
     canClickAgain = true;
