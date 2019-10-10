@@ -147,32 +147,36 @@ bool canStartInputNewCode = false;
 
 // PRESS CANCEL BUTTON TO CHANGE SECURITY CODE
 int changeCode() {
-  changingCode = true;
-  int newCodeNumber = getNumberFromPotentiometer();
-  OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
+  if (getNumberFromVolumesensor() > 800) {
+    Serial.println("cancel"); // BUT HOW DO I STOP IT?
+  } else {
+    changingCode = true;
+    int newCodeNumber = getNumberFromPotentiometer();
+    OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
+    
+    if (digitalRead(BUTTON2) == LOW) {
+      canStartInputNewCode = true;
+      canClickAgain = true;
+      return;
+    }
   
-  if (digitalRead(BUTTON2) == LOW) {
-    canStartInputNewCode = true;
-    canClickAgain = true;
-    return;
-  }
-
-  if (!canStartInputNewCode) {
-    return;
-  }
+    if (!canStartInputNewCode) {
+      return;
+    }
+    
+    canClickAgain = false;
+    
+    if (!canClickAgain && millis() - time > debounce) {
+      securityCode[currentChangeCodeStep] = newCodeNumber;
+      Serial.println("New code for step " + String(currentChangeCodeStep) +" = " + String(newCodeNumber));
+      currentChangeCodeStep++;
+      time = millis();
   
-  canClickAgain = false;
-
-  if (!canClickAgain && millis() - time > debounce) {
-    securityCode[currentChangeCodeStep] = newCodeNumber;
-    Serial.println("New code for step " + String(currentChangeCodeStep) +" = " + String(newCodeNumber));
-    currentChangeCodeStep++;
-    time = millis();
-
-    if (currentChangeCodeStep == 3) {
-      codeChanged = true;
-      changingCode = false;
-      Serial.println("Code changed");
+      if (currentChangeCodeStep == 3) {
+        codeChanged = true;
+        changingCode = false;
+        Serial.println("Code changed");
+      }
     }
   }
 }
@@ -218,6 +222,10 @@ void loop() {
   toggleOnAndOff();
   int varDoorIsOpen = doorIsOpen();
 
+  if (enteringCode == true) {
+    varDoorIsOpen = true;
+  }
+
   // DOOR CLOSED, ALARM OFF
   if (varDoorIsOpen == false && alarmIsOn == false) {
     turnOnLEDAndTurnOthersOff(LED_YELLOW);
@@ -250,7 +258,7 @@ void loop() {
 
     int timeLeftString = timeLeft - ((millis() - countdownTime) / 1000); 
 
-    //OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
+    // OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
 
     // 3 (lege) plekken om getal in te voeren 
     // bij elke OK getal opslaan en doorgaan naar de volgende lege plek
@@ -260,22 +268,22 @@ void loop() {
     OLED.print("[" + String(getNumberFromPotentiometer()) + "]" + "[" + String(getNumberFromPotentiometer()) + 
     "]" + "[" + String(getNumberFromPotentiometer()) + "]" + "  Time: " + String(timeLeftString));
 
-    for (i = 0; i < 3; i++)
-      if (userCode[0] == nog niet ingevuld && userCode[1] == nog niet ingevuld && userCode[2] == nog niet ingevuld) {
-        // Print dan 3 lege plekken, de eerste is getNumberFromPotentiometer
-      }
-
-      if (userCode[0] == ingevuld && userCode[1] == niet ingevuld && userCode[2] == niet ingevuld {
-        // Print dan firstNumber op de eerste plek, getNumberFromPotentiometer op tweede plek, leeg op derde
-      }
-
-      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == niet ingevuld {
-        // Print dan firstNumber op de eerste plek, secondNumber op tweede, getNumberFromPotentiometer op derde 
-      }
-
-      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == ingevuld {
-        // Dan gaat ie als het goed is naar "Code correct" in checkCode(), dus dan kan deze denk ik weg.
-      }
+//    for (i = 0; i < 3; i++)
+//      if (userCode[0] == nog niet ingevuld && userCode[1] == nog niet ingevuld && userCode[2] == nog niet ingevuld) {
+//        // Print dan 3 lege plekken, de eerste is getNumberFromPotentiometer
+//      }
+//
+//      if (userCode[0] == ingevuld && userCode[1] == niet ingevuld && userCode[2] == niet ingevuld {
+//        // Print dan firstNumber op de eerste plek, getNumberFromPotentiometer op tweede plek, leeg op derde
+//      }
+//
+//      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == niet ingevuld {
+//        // Print dan firstNumber op de eerste plek, secondNumber op tweede, getNumberFromPotentiometer op derde 
+//      }
+//
+//      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == ingevuld {
+//        // Dan gaat ie als het goed is naar "Code correct" in checkCode(), dus dan kan deze denk ik weg.
+//      }
   }
 
   // DOOR CLOSED, ALARM ON
