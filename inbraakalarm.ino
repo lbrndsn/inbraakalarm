@@ -41,7 +41,7 @@ int toggleOnAndOff() {
 }
 
 // ALARM
-void alarm() {
+void setOffAlarm() {
   digitalWrite(LED_RED, 0);
   //digitalWrite(BUZZER, 1);
   digitalWrite(LED_BLUE, 255);
@@ -63,7 +63,8 @@ void alarm() {
 // CHECK IF DOOR IS OPEN
 int doorIsOpen() {
   int magnetValue = analogRead(MAGNETSENSOR);
-  
+
+  // < en > wisselen
   if (magnetValue < magnetStartingValue - 25 || magnetValue > magnetStartingValue + 25) {
     return true;
    } else {
@@ -115,7 +116,7 @@ void checkCode() {
 
         for (int j = 0; j < 3; j++) {
           if (userCode[j] == securityCode[j] && currentCodeStep == 3) {
-            Serial.println("code correct");
+            Serial.println("Code is correct");
             alarmIsOn = false;
           } 
         }
@@ -130,8 +131,8 @@ void checkCode() {
         for (int j = 0; j < 3; j++) {
           if (userCode[j] != securityCode[j] && currentCodeStep == 3) {
             for(;;) {
-              OLED.print("Code incorrect");
-              alarm();
+              OLED.print("Code is incorrect");
+              setOffAlarm();
             }
           }
         }
@@ -176,7 +177,7 @@ int changeCode() {
   }
 }
 
-// TODO: cijfer dat je aan het invoeren bent laten knipperen, herbruikbare functies*
+// TODO: cijfer dat je aan het invoeren bent laten knipperen (bij invoer & veranderen), herbruikbare functies*
 // TODO: cancel knop werkend maken, pas na invoeren laatste cijfer wordt code veranderd*
 // TODO: switch, wanneer magneet dichtbij is is juist deur dicht
 
@@ -192,7 +193,7 @@ void alarmGoesOffAfterCountdown(int timeToWait) {
 
   while(millis() > startTime + timeToWait) {
     OLED.print("Time's up!");
-    alarm();
+    setOffAlarm();
   }
 }
 
@@ -209,7 +210,7 @@ int getNumberFromVolumesensor() {
   return volumeValue;
 }
 
-int timeLeft = 5;
+int timeLeft = 100;
 long countdownTime;
 bool countdownStarted = false;
 
@@ -238,7 +239,7 @@ void loop() {
   // DOOR OPEN, ALARM ON
   if (varDoorIsOpen == true && alarmIsOn == true) {
     turnOnLEDAndTurnOthersOff(LED_RED);
-    alarmGoesOffAfterCountdown(5000);
+    alarmGoesOffAfterCountdown(100000);
 
     if (!countdownStarted) {
       countdownTime = millis();
@@ -249,7 +250,32 @@ void loop() {
 
     int timeLeftString = timeLeft - ((millis() - countdownTime) / 1000); 
 
-    OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
+    //OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
+
+    // 3 (lege) plekken om getal in te voeren 
+    // bij elke OK getal opslaan en doorgaan naar de volgende lege plek
+    // bij CANCEL opnieuw beginnen
+    // delay aftellen naast de invoer
+
+    OLED.print("[" + String(getNumberFromPotentiometer()) + "]" + "[" + String(getNumberFromPotentiometer()) + 
+    "]" + "[" + String(getNumberFromPotentiometer()) + "]" + "  Time: " + String(timeLeftString));
+
+    for (i = 0; i < 3; i++)
+      if (userCode[0] == nog niet ingevuld && userCode[1] == nog niet ingevuld && userCode[2] == nog niet ingevuld) {
+        // Print dan 3 lege plekken, de eerste is getNumberFromPotentiometer
+      }
+
+      if (userCode[0] == ingevuld && userCode[1] == niet ingevuld && userCode[2] == niet ingevuld {
+        // Print dan firstNumber op de eerste plek, getNumberFromPotentiometer op tweede plek, leeg op derde
+      }
+
+      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == niet ingevuld {
+        // Print dan firstNumber op de eerste plek, secondNumber op tweede, getNumberFromPotentiometer op derde 
+      }
+
+      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == ingevuld {
+        // Dan gaat ie als het goed is naar "Code correct" in checkCode(), dus dan kan deze denk ik weg.
+      }
   }
 
   // DOOR CLOSED, ALARM ON
@@ -260,7 +286,7 @@ void loop() {
     if (getNumberFromVolumesensor() > 800) {
       for(;;) {
         OLED.print("You're too loud");
-        alarm();
+        setOffAlarm();
       }
     }
   }
