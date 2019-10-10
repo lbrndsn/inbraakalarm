@@ -40,6 +40,26 @@ int toggleOnAndOff() {
   previousAlarmIsOn = buttonReading;
 }
 
+// ALARM
+void alarm() {
+  digitalWrite(LED_RED, 0);
+  //digitalWrite(BUZZER, 1);
+  digitalWrite(LED_BLUE, 255);
+  delay(100);
+  digitalWrite(LED_GREEN, 255);
+  delay(100);
+  digitalWrite(LED_YELLOW, 255);
+  delay(100);
+  digitalWrite(LED_RED, 255);
+  delay(100);
+  digitalWrite(LED_BLUE, 0);
+  delay(100);
+  digitalWrite(LED_GREEN, 0);
+  delay(100);
+  digitalWrite(LED_YELLOW, 0);
+  delay(100);
+}
+
 // CHECK IF DOOR IS OPEN
 int doorIsOpen() {
   int magnetValue = analogRead(MAGNETSENSOR);
@@ -109,26 +129,9 @@ void checkCode() {
 
         for (int j = 0; j < 3; j++) {
           if (userCode[j] != securityCode[j] && currentCodeStep == 3) {
-            Serial.println("code incorrect");
-            
             for(;;) {
               OLED.print("Code incorrect");
-              digitalWrite(LED_RED, 0);
-              //digitalWrite(BUZZER, 1);
-              digitalWrite(LED_BLUE, 255);
-              delay(100);
-              digitalWrite(LED_GREEN, 255);
-              delay(100);
-              digitalWrite(LED_YELLOW, 255);
-              delay(100);
-              digitalWrite(LED_RED, 255);
-              delay(100);
-              digitalWrite(LED_BLUE, 0);
-              delay(100);
-              digitalWrite(LED_GREEN, 0);
-              delay(100);
-              digitalWrite(LED_YELLOW, 0);
-              delay(100);
+              alarm();
             }
           }
         }
@@ -160,23 +163,20 @@ int changeCode() {
   canClickAgain = false;
 
   if (!canClickAgain && millis() - time > debounce) {
-    Serial.println(currentChangeCodeStep);
-    
     securityCode[currentChangeCodeStep] = newCodeNumber;
-    Serial.println("New code for step " + String(currentChangeCodeStep) +": " + String(newCodeNumber));
+    Serial.println("New code for step " + String(currentChangeCodeStep) +" = " + String(newCodeNumber));
     currentChangeCodeStep++;
     time = millis();
 
     if (currentChangeCodeStep == 3) {
       codeChanged = true;
       changingCode = false;
-      Serial.println("code changed");
+      Serial.println("Code changed");
     }
   }
 }
 
 // TODO: cijfer dat je aan het invoeren bent laten knipperen, herbruikbare functies*
-// TODO: wanneer deur dicht & alarm uit code kunnen veranderen, in een while
 // TODO: cancel knop werkend maken, pas na invoeren laatste cijfer wordt code veranderd*
 // TODO: switch, wanneer magneet dichtbij is is juist deur dicht
 
@@ -192,22 +192,7 @@ void alarmGoesOffAfterCountdown(int timeToWait) {
 
   while(millis() > startTime + timeToWait) {
     OLED.print("Time's up!");
-    digitalWrite(LED_RED, 0);
-    //digitalWrite(BUZZER, 1);
-    digitalWrite(LED_BLUE, 255);
-    delay(100);
-    digitalWrite(LED_GREEN, 255);
-    delay(100);
-    digitalWrite(LED_YELLOW, 255);
-    delay(100);
-    digitalWrite(LED_RED, 255);
-    delay(100);
-    digitalWrite(LED_BLUE, 0);
-    delay(100);
-    digitalWrite(LED_GREEN, 0);
-    delay(100);
-    digitalWrite(LED_YELLOW, 0);
-    delay(100);
+    alarm();
   }
 }
 
@@ -224,7 +209,7 @@ int getNumberFromVolumesensor() {
   return volumeValue;
 }
 
-int timeLeft = 100;
+int timeLeft = 5;
 long countdownTime;
 bool countdownStarted = false;
 
@@ -242,8 +227,6 @@ void loop() {
     if ((digitalRead(BUTTON2) == HIGH && codeChanged == false) || (changingCode && codeChanged == false)) {
       changeCode();
     }
-
-    // TODO: mogelijkheid om 3 cijferige code te veranderen
   }
 
   // DOOR OPEN, ALARM OFF
@@ -255,7 +238,7 @@ void loop() {
   // DOOR OPEN, ALARM ON
   if (varDoorIsOpen == true && alarmIsOn == true) {
     turnOnLEDAndTurnOthersOff(LED_RED);
-    alarmGoesOffAfterCountdown(100000);
+    alarmGoesOffAfterCountdown(5000);
 
     if (!countdownStarted) {
       countdownTime = millis();
@@ -266,7 +249,7 @@ void loop() {
 
     int timeLeftString = timeLeft - ((millis() - countdownTime) / 1000); 
 
-    OLED.print(String(getNumberFromPotentiometer()) + String("   /   ") + String(timeLeftString));
+    OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
   }
 
   // DOOR CLOSED, ALARM ON
@@ -277,22 +260,7 @@ void loop() {
     if (getNumberFromVolumesensor() > 800) {
       for(;;) {
         OLED.print("You're too loud");
-        digitalWrite(LED_RED, 0);
-        //digitalWrite(BUZZER, 1);
-        digitalWrite(LED_BLUE, 255);
-        delay(100);
-        digitalWrite(LED_GREEN, 255);
-        delay(100);
-        digitalWrite(LED_YELLOW, 255);
-        delay(100);
-        digitalWrite(LED_RED, 255);
-        delay(100);
-        digitalWrite(LED_BLUE, 0);
-        delay(100);
-        digitalWrite(LED_GREEN, 0);
-        delay(100);
-        digitalWrite(LED_YELLOW, 0);
-        delay(100);
+        alarm();
       }
     }
   }
