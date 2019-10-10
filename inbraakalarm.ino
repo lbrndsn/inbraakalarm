@@ -147,36 +147,39 @@ bool canStartInputNewCode = false;
 
 // PRESS CANCEL BUTTON TO CHANGE SECURITY CODE
 int changeCode() {
-  if (getNumberFromVolumesensor() > 800) {
-    Serial.println("cancel"); // BUT HOW DO I STOP IT?
-  } else {
-    changingCode = true;
-    int newCodeNumber = getNumberFromPotentiometer();
-    OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
-    
-    if (digitalRead(BUTTON2) == LOW) {
-      canStartInputNewCode = true;
-      canClickAgain = true;
-      return;
-    }
+  if (digitalRead(BUTTON1) == HIGH) {
+    Serial.println("cancel"); // BUT HOW DO I STOP IT? MOET TERUGKEREN NAAR "PRESS OK TO ARM"
+    changingCode = false;
+    codeChanged = false;
+    return;
+  } 
   
-    if (!canStartInputNewCode) {
-      return;
-    }
-    
-    canClickAgain = false;
-    
-    if (!canClickAgain && millis() - time > debounce) {
-      securityCode[currentChangeCodeStep] = newCodeNumber;
-      Serial.println("New code for step " + String(currentChangeCodeStep) +" = " + String(newCodeNumber));
-      currentChangeCodeStep++;
-      time = millis();
+  changingCode = true;
+  int newCodeNumber = getNumberFromPotentiometer();
+  OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
   
-      if (currentChangeCodeStep == 3) {
-        codeChanged = true;
-        changingCode = false;
-        Serial.println("Code changed");
-      }
+  if (digitalRead(BUTTON2) == LOW) {
+    canStartInputNewCode = true;
+    canClickAgain = true;
+    return;
+  }
+
+  if (!canStartInputNewCode) {
+    return;
+  }
+  
+  canClickAgain = false;
+  
+  if (!canClickAgain && millis() - time > debounce) {
+    securityCode[currentChangeCodeStep] = newCodeNumber;
+    Serial.println("New code for step " + String(currentChangeCodeStep) +" = " + String(newCodeNumber));
+    currentChangeCodeStep++;
+    time = millis();
+
+    if (currentChangeCodeStep == 3) {
+      codeChanged = true;
+      changingCode = false;
+      Serial.println("Code changed");
     }
   }
 }
