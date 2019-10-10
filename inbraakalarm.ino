@@ -259,7 +259,7 @@ void loop() {
     
     checkCode();
 
-    int timeLeftString = timeLeft - ((millis() - countdownTime) / 1000); 
+    String timeLeftString = String(timeLeft - ((millis() - countdownTime) / 1000)); 
 
     // OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
 
@@ -268,8 +268,8 @@ void loop() {
     // bij CANCEL opnieuw beginnen
     // delay aftellen naast de invoer
 
-    OLED.print("[" + String(getNumberFromPotentiometer()) + "]" + "[" + String(getNumberFromPotentiometer()) + 
-    "]" + "[" + String(getNumberFromPotentiometer()) + "]" + "  Time: " + String(timeLeftString));
+    String text = getCodeInterfaceText(getNumberFromPotentiometer(), timeLeftString);
+    OLED.print(text);
 
 //    for (i = 0; i < 3; i++)
 //      if (userCode[0] == nog niet ingevuld && userCode[1] == nog niet ingevuld && userCode[2] == nog niet ingevuld) {
@@ -301,6 +301,28 @@ void loop() {
       }
     }
   }
+}
+
+String getCodeInterfaceText(int potentioMeterNumber, String timeLeftString) {
+  String text = "";
+  for (int i = 0; i < 3; i++) {
+    text += "[";
+    if (currentCodeStep == i) {
+      text += String(potentioMeterNumber);
+    } else if (userCode[i] == -1) {
+      text += "_";
+    } else {
+      text += String(userCode[i]);
+    }
+    text += "]";
+  }
+
+  if (timeLeftString == NULL) {
+     return text;
+  }
+  return text + "  Time: " + timeLeftString;
+//  return "[" + String(potentioMeterNumber) + "]" + "[" + String(potentioMeterNumber) + 
+//    "]" + "[" + String(potentioMeterNumber) + "]" + "  Time: " + timeLeftString;
 }
 
 // TODO: reformat
