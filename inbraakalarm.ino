@@ -63,12 +63,15 @@ void setOffAlarm() {
 // CHECK IF DOOR IS OPEN
 int doorIsOpen() {
   int magnetValue = analogRead(MAGNETSENSOR);
+  Serial.println(magnetValue);
+  Serial.println("Starting value: " + String(magnetStartingValue));
 
-  // < en > wisselen
-  if (magnetValue < magnetStartingValue - 25 || magnetValue > magnetStartingValue + 25) {
-    return true;
-   } else {
+  if (magnetValue > magnetStartingValue - 25 || magnetValue < magnetStartingValue + 25) {
+    Serial.println("true");
     return false;
+   } else {
+    Serial.println("false");
+    return true;
    }
 }
 
@@ -106,17 +109,16 @@ void checkCode() {
 
   if (canClickAgain && millis() - time > debounce) {
     canClickAgain = false;
-    Serial.println("Entering number: " + String(currentNumber));
 
     for (int i = 0; i < sizeof(securityCode); i++) {
       if (currentCodeStep == i && currentNumber == securityCode[i]) {
-        Serial.println("Number is correct");
+        // Number is correct
         userCode[i] = currentNumber;
         currentCodeStep++;
 
         for (int j = 0; j < 3; j++) {
           if (userCode[j] == securityCode[j] && currentCodeStep == 3) {
-            Serial.println("Code is correct");
+            // Code is correct
             alarmIsOn = false;
           } 
         }
@@ -124,7 +126,7 @@ void checkCode() {
       }
 
       if (currentCodeStep == i && currentNumber != securityCode[i]) {
-        Serial.println("Nummber is incorrect");
+        // Nummber is incorrect
         userCode[i] = currentNumber;
         currentCodeStep++;
 
@@ -148,7 +150,6 @@ bool canStartInputNewCode = false;
 // PRESS CANCEL BUTTON TO CHANGE SECURITY CODE
 int changeCode() {
   if (digitalRead(BUTTON1) == HIGH) {
-    Serial.println("cancel"); // BUT HOW DO I STOP IT? MOET TERUGKEREN NAAR "PRESS OK TO ARM"
     changingCode = false;
     codeChanged = false;
     return;
@@ -156,7 +157,8 @@ int changeCode() {
   
   changingCode = true;
   int newCodeNumber = getNumberFromPotentiometer();
-  OLED.print("Change code: " + String(currentChangeCodeStep) + "=" + String(newCodeNumber));
+  String text = getCodeInterfaceText(newCodeNumber, "", currentChangeCodeStep);
+  OLED.print(text);
   
   if (digitalRead(BUTTON2) == LOW) {
     canStartInputNewCode = true;
@@ -183,10 +185,6 @@ int changeCode() {
     }
   }
 }
-
-// TODO: cijfer dat je aan het invoeren bent laten knipperen (bij invoer & veranderen), herbruikbare functies*
-// TODO: cancel knop werkend maken, pas na invoeren laatste cijfer wordt code veranderd*
-// TODO: switch, wanneer magneet dichtbij is is juist deur dicht
 
 bool canSetDelay = true;
 long startTime;
@@ -217,7 +215,7 @@ int getNumberFromVolumesensor() {
   return volumeValue;
 }
 
-int timeLeft = 100;
+int timeLeft = 20;
 long countdownTime;
 bool countdownStarted = false;
 
@@ -250,7 +248,7 @@ void loop() {
   // DOOR OPEN, ALARM ON
   if (varDoorIsOpen == true && alarmIsOn == true) {
     turnOnLEDAndTurnOthersOff(LED_RED);
-    alarmGoesOffAfterCountdown(100000);
+    alarmGoesOffAfterCountdown(20000);
 
     if (!countdownStarted) {
       countdownTime = millis();
@@ -259,34 +257,10 @@ void loop() {
     
     checkCode();
 
-    String timeLeftString = String(timeLeft - ((millis() - countdownTime) / 1000)); 
+    String timeLeftString = String(timeLeft - ((millis() - countdownTime) / 1000));
 
-    // OLED.print("Input: " + String(getNumberFromPotentiometer()) + String("      | ") + String(timeLeftString));
-
-    // 3 (lege) plekken om getal in te voeren 
-    // bij elke OK getal opslaan en doorgaan naar de volgende lege plek
-    // bij CANCEL opnieuw beginnen
-    // delay aftellen naast de invoer
-
-    String text = getCodeInterfaceText(getNumberFromPotentiometer(), timeLeftString);
+    String text = getCodeInterfaceText(getNumberFromPotentiometer(), timeLeftString, currentCodeStep);
     OLED.print(text);
-
-//    for (i = 0; i < 3; i++)
-//      if (userCode[0] == nog niet ingevuld && userCode[1] == nog niet ingevuld && userCode[2] == nog niet ingevuld) {
-//        // Print dan 3 lege plekken, de eerste is getNumberFromPotentiometer
-//      }
-//
-//      if (userCode[0] == ingevuld && userCode[1] == niet ingevuld && userCode[2] == niet ingevuld {
-//        // Print dan firstNumber op de eerste plek, getNumberFromPotentiometer op tweede plek, leeg op derde
-//      }
-//
-//      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == niet ingevuld {
-//        // Print dan firstNumber op de eerste plek, secondNumber op tweede, getNumberFromPotentiometer op derde 
-//      }
-//
-//      if (userCode[0] == ingevuld && userCode[1] == ingevuld && userCode[2] == ingevuld {
-//        // Dan gaat ie als het goed is naar "Code correct" in checkCode(), dus dan kan deze denk ik weg.
-//      }
   }
 
   // DOOR CLOSED, ALARM ON
@@ -303,11 +277,11 @@ void loop() {
   }
 }
 
-String getCodeInterfaceText(int potentioMeterNumber, String timeLeftString) {
+String getCodeInterfaceText(int potentioMeterNumber, String timeLeftString, int codeStep) {
   String text = "";
   for (int i = 0; i < 3; i++) {
     text += "[";
-    if (currentCodeStep == i) {
+    if (codeStep == i) {
       text += String(potentioMeterNumber);
     } else if (userCode[i] == -1) {
       text += "_";
@@ -317,12 +291,8 @@ String getCodeInterfaceText(int potentioMeterNumber, String timeLeftString) {
     text += "]";
   }
 
-  if (timeLeftString == NULL) {
+  if (timeLeftString == "") {
      return text;
   }
   return text + "  Time: " + timeLeftString;
-//  return "[" + String(potentioMeterNumber) + "]" + "[" + String(potentioMeterNumber) + 
-//    "]" + "[" + String(potentioMeterNumber) + "]" + "  Time: " + timeLeftString;
 }
-
-// TODO: reformat
