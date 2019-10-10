@@ -1,7 +1,7 @@
 #include "s4d_breadboard.h"
 
 int magnetStartingValue;
-int code[3] = {1, 1, 1};
+int securityCode[3] = {1, 1, 1};
 
 void setup() {
   initializeBreadboard();
@@ -74,8 +74,6 @@ int turnOnLEDAndTurnOthersOff(int LEDColor) {
 bool canClickAgain = true;
 
 // COMPARE CODE USER FILLS IN TO SET SECURITY CODE
-// TODO: gaat fout omdat knop meerdere keren triggered,
-// dus ff kijken hoe je de knop moet debouncen en canClickAgain moet doen, (zie onder bij changecode) 
 void checkCode() {
   enteringCode = true;
   int currentNumber = getNumberFromPotentiometer();
@@ -85,43 +83,58 @@ void checkCode() {
     return;
   }
 
-
   if (canClickAgain && millis() - time > debounce) {
     canClickAgain = false;
     Serial.println("Entering number: " + String(currentNumber));
 
-    for (int i = 0; i < sizeof(code); i++) {
-      if (currentCodeStep == i && currentNumber == code[i]) {
+    for (int i = 0; i < sizeof(securityCode); i++) {
+      if (currentCodeStep == i && currentNumber == securityCode[i]) {
         Serial.println("Number is correct");
         userCode[i] = currentNumber;
         currentCodeStep++;
 
         for (int j = 0; j < 3; j++) {
-          if (userCode[j] == code[j] && currentCodeStep == 3) {
+          if (userCode[j] == securityCode[j] && currentCodeStep == 3) {
             Serial.println("code correct");
             alarmIsOn = false;
-          }
+          } 
         }
-        
         break; 
       }
+
+      if (currentCodeStep == i && currentNumber != securityCode[i]) {
+        Serial.println("Nummber is incorrect");
+        userCode[i] = currentNumber;
+        currentCodeStep++;
+
+        for (int j = 0; j < 3; j++) {
+          if (userCode[j] != securityCode[j] && currentCodeStep == 3) {
+            Serial.println("code incorrect");
+            
+            for(;;) {
+              OLED.print("Code incorrect");
+              digitalWrite(LED_RED, 0);
+              //digitalWrite(BUZZER, 1);
+              digitalWrite(LED_BLUE, 255);
+              delay(100);
+              digitalWrite(LED_GREEN, 255);
+              delay(100);
+              digitalWrite(LED_YELLOW, 255);
+              delay(100);
+              digitalWrite(LED_RED, 255);
+              delay(100);
+              digitalWrite(LED_BLUE, 0);
+              delay(100);
+              digitalWrite(LED_GREEN, 0);
+              delay(100);
+              digitalWrite(LED_YELLOW, 0);
+              delay(100);
+            }
+          }
+        }
+        break;
+      }
     }
-    
-//    
-//    for (int i = 0; i < sizeof(code); i++) {
-//      if (currentCodeStep == i && currentNumber == code[i]) {
-//        Serial.println("Number is correct");
-//        userCode[i] = currentNumber;
-//        currentCodeStep++;
-//        
-//        for (int j = 0; j < 3; j++) {
-//          if (userCode[j] == code[j] && currentCodeStep == 3) {
-//            Serial.println("code correct");
-//            alarmIsOn = false;
-//          }
-//        }
-//      }
-//    }
   }
 }
 
@@ -149,7 +162,7 @@ int changeCode() {
   if (!canClickAgain && millis() - time > debounce) {
     Serial.println(currentChangeCodeStep);
     
-    code[currentChangeCodeStep] = newCodeNumber;
+    securityCode[currentChangeCodeStep] = newCodeNumber;
     Serial.println("New code for step " + String(currentChangeCodeStep) +": " + String(newCodeNumber));
     currentChangeCodeStep++;
     time = millis();
@@ -160,25 +173,6 @@ int changeCode() {
       Serial.println("code changed");
     }
   }
-  
-//
-//  for (int i = 0; i < 3; i++) {
-//    for (int i = 0; i < sizeof(code); i++) {
-//      if (currentChangeCodeStep == i) {
-//        userCode[i] = newCodeNumber;
-//        Serial.println(userCode[i]);
-//        code[currentChangeCodeStep] = newCodeNumber;
-//        currentChangeCodeStep++;
-//      }
-//
-//      for (int i = 0; i < 3; i++) {
-//        if (currentChangeCodeStep == 3) {
-//          codeChanged = true;
-//          Serial.println("code is changed");
-//        }
-//      }
-//    }
-//  }
 }
 
 // TODO: cijfer dat je aan het invoeren bent laten knipperen, herbruikbare functies*
@@ -242,7 +236,7 @@ void loop() {
   if (varDoorIsOpen == false && alarmIsOn == false) {
     turnOnLEDAndTurnOthersOff(LED_YELLOW);
     if (!changingCode) {
-      OLED.print("OK to arm");
+      OLED.print("Press OK to arm");
     }
 
     if ((digitalRead(BUTTON2) == HIGH && codeChanged == false) || (changingCode && codeChanged == false)) {
@@ -255,6 +249,7 @@ void loop() {
   // DOOR OPEN, ALARM OFF
   if (varDoorIsOpen == true && alarmIsOn == false) {
     turnOnLEDAndTurnOthersOff(LED_BLUE);
+    OLED.print("Alarm off");
   }
 
   // DOOR OPEN, ALARM ON
