@@ -63,14 +63,10 @@ void setOffAlarm() {
 // CHECK IF DOOR IS OPEN
 int doorIsOpen() {
   int magnetValue = analogRead(MAGNETSENSOR);
-  Serial.println(magnetValue);
-  Serial.println("Starting value: " + String(magnetStartingValue));
 
-  if (magnetValue > magnetStartingValue - 25 || magnetValue < magnetStartingValue + 25) {
-    Serial.println("true");
+  if (magnetValue < magnetStartingValue - 25 || magnetValue > magnetStartingValue + 25) {
     return false;
    } else {
-    Serial.println("false");
     return true;
    }
 }
